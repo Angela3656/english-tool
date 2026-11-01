@@ -498,4 +498,117 @@ function renderReview(area) {
     '<div class="level">L' + s.level + '</div>' +
     '</div>' +
     '<div class="btn-row">' +
-    '<button class="btn-know" onclick="markKnown(' + s.id + ')">
+    '<button class="btn-know" onclick="markKnown(' + s.id + ')">✅ 记住了</button>' +
+    '<button class="btn-forget" onclick="markForget(' + s.id + ')">❌ 忘了</button>' +
+    '</div>' +
+    '<button onclick="speakText(\'' + s.en.replace(/'/g,"\\'") + '\')" style="margin:10px 15px;padding:12px;background:#e3f2fd;border:none;border-radius:8px;width:calc(100% - 30px);font-size:15px;">🔊 听发音</button>' +
+    '<button onclick="startDictation(' + s.id + ')" style="margin:10px 15px;padding:12px;background:#fff3e0;border:none;border-radius:8px;width:calc(100% - 30px);font-size:15px;">✍️ 听写练习</button>';
+}
+
+function flipCard2() {
+  const en = document.getElementById('enText2');
+  if (en) en.style.display = en.style.display === 'none' ? 'block' : 'none';
+}
+
+// ============ 默写（Tab页） ============
+function renderDictate(area) {
+  const list = getFiltered().filter(function(s) { return !s.dictPass; });
+  if (list.length === 0) { area.innerHTML = '<div style="padding:40px;text-align:center;color:#999;">🎉 当前分类默写已全部过关！</div>'; return; }
+  const s = list[Math.floor(Math.random() * list.length)];
+  area.innerHTML = '<div class="dictation-area">' +
+    '<div class="cn-prompt">' + s.cn + '</div>' +
+    '<textarea id="dictInput" placeholder="在这里盲打英文..." oninput="checkDictRealTime(\'' + s.en.replace(/'/g,"\\'") + '\')"></textarea>' +
+    '<div id="dictHint" style="font-size:12px;color:#999;margin-top:5px;"></div>' +
+    '<button onclick="checkDict(\'' + s.en.replace(/'/g,"\\'") + '\', ' + s.id + ')" style="margin-top:10px;width:100%;padding:12px;background:#667eea;color:white;border:none;border-radius:8px;font-size:16px;">👁️ 看答案/批改</button>' +
+    '</div>';
+}
+
+function checkDictRealTime(answer) {
+  const input = document.getElementById('dictInput').value.toLowerCase().trim();
+  const hint = document.getElementById('dictHint');
+  if (!input) { hint.textContent = ''; return; }
+  const words = answer.toLowerCase().replace(/[^\\w\\s]/g,'').split(/\\s+/);
+  const inputWords = input.replace(/[^\\w\\s]/g,'').split(/\\s+/);
+  let matched = 0;
+  for (let i = 0; i < words.length; i++) {
+    for (let j = 0; j < inputWords.length; j++) {
+      if (inputWords[j].indexOf(words[i].substring(0,3)) >= 0) { matched++; break; }
+    }
+  }
+  hint.textContent = '已匹配 ' + matched + '/' + words.length + ' 个词块';
+}
+
+function checkDict(answer, id) {
+  const input = document.getElementById('dictInput').value;
+  const area = document.getElementById('mainArea');
+  const s = data.sentences.find(x => x.id === id);
+  const userWords = input.toLowerCase().replace(/[^\\w\\s]/g,'').split(/\\s+/);
+  const ansWords = answer.toLowerCase().replace(/[^\\w\\s]/g,'').split(/\\s+/);
+  let correct = 0;
+  let result = '';
+  for (let i = 0; i < ansWords.length; i++) {
+    const w = ansWords[i];
+    let isCorrect = false;
+    for (let j = 0; j < userWords.length; j++) {
+      if (userWords[j] === w || userWords[j].indexOf(w.substring(0, Math.min(3, w.length))) >= 0) { isCorrect = true; break; }
+    }
+    if (isCorrect) { correct++; result += '<span class="word-correct">' + w + '</span> '; }
+    else result += '<span class="word-wrong">' + w + '</span> ';
+  }
+  const score = Math.round(correct / ansWords.length * 100);
+  if (score >= 70 && s) { s.dictPass = true; saveData(); updateStats(); }
+  area.innerHTML = '<div class="dictation-result">' +
+    '<p style="margin-bottom:10px;">得分：<strong>' + score + '%</strong></p>' +
+    '<p>' + result + '</p>' +
+    '<p style="margin-top:10px;font-size:13px;color:#666;">正确答案：' + answer + '</p>' +
+    '<button onclick="renderDictate(document.getElementById(\'mainArea\'))" style="margin-top:15px;width:100%;padding:12px;background:#667eea;color:white;border:none;border-radius:8px;font-size:16px;">下一句</button>' +
+    '</div>';
+}
+
+// ============ 添加 ============
+function renderAdd(area) {
+  let opts = '';
+  for (let i = 0; i < categories.length; i++) {
+    if (categories[i] !== '全部') opts += '<option>' + categories[i] + '</option>';
+  }
+  area.innerHTML = '<div class="add-form">' +
+    '<select id="addCat">' + opts + '</select>' +
+    '<textarea id="addCn" placeholder="中文句子"></textarea>' +
+    '<input id="addEn" placeholder="英文句子">' +
+    '<button onclick="doAdd()">添加句子</button>' +
+    '</div>';
+}
+
+function doAdd() {
+  const cn = document.getElementById('addCn').value.trim();
+  const en = document.getElementById('addEn').value.trim();
+  const cat = document.getElementById('addCat').value;
+  if (!cn || !en) { alert('请填写中英文'); return; }
+  data.sentences.push({ id: Date.now(), cn: cn, en: en, cat: cat, level: 0, nextReview: 0, mastered: false, dictPass: false });
+  saveData(); updateStats();
+  document.getElementById('addCn').value = ''; document.getElementById('addEn').value = '';
+  alert('添加成功！');
+}
+
+// ============ 列表 ============
+function renderList(area) {
+  const list = getFiltered();
+  let html = '';
+  for (let i = 0; i < list.length; i++) {
+    const s = list[i];
+    html += '<div class="list-item">' +
+      '<div class="cn">' + s.cn + '</div>' +
+      '<div class="en">' + s.en + '</div>' +
+      '<span class="tag ' + (s.mastered?'tag-mastered':'tag-due') + '">' + (s.mastered?'✅已固化':'L'+s.level+(s.nextReview<=Date.now()?' 🔥该复习了':'')) + '</span>' +
+      '</div>';
+  }
+  area.innerHTML = html;
+}
+
+// ============ 初始化 ============
+loadData();
+renderCatBar();
+renderCurrentTab();
+</script>
+</body>
+</html>
