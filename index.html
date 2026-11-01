@@ -375,6 +375,66 @@ function markForget(id) {
   saveData(); updateStats(); renderCurrentTab();
 }
 
+// ============ 发音（修复：强制英语语音） ============
+function speakText(text) {
+  if ('speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.8; 
+    u.pitch = 1; 
+    u.volume = 1;
+    u.lang = 'en-US';
+    // 尝试选择英语语音
+    const voices = speechSynthesis.getVoices();
+    const enVoice = voices.find(v => v.lang && v.lang.startsWith('en'));
+    if (enVoice) u.voice = enVoice;
+    speechSynthesis.speak(u);
+  }
+}
+
+// ============ 听写功能 ============
+function startDictation(id) {
+  const s = data.sentences.find(x => x.id === id);
+  if (!s) return;
+  // 播放两遍
+  speakText(s.en);
+  setTimeout(() => speakText(s.en), 2000);
+  
+  const area = document.getElementById('mainArea');
+  area.innerHTML = `
+    <div class="dictation-area" style="background:white;margin:15px;border-radius:12px;padding:20px;">
+      <p style="text-align:center;margin-bottom:15px;font-size:16px;">🔊 已播放两遍，请听写：</p>
+      <textarea id="dictInput" placeholder="凭听力在这里写下英文..." style="width:100%;padding:12px;border:1px solid #ddd;border-radius:8px;font-size:16px;min-height:100px;"></textarea>
+      <button onclick="checkDictationResult(${s.id})" style="margin-top:15px;width:100%;padding:14px;background:#667eea;color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;">📝 批改</button>
+      <button onclick="renderCurrentTab()" style="margin-top:10px;width:100%;padding:12px;background:#eee;border:none;border-radius:8px;font-size:14px;">← 返回学习</button>
+    </div>
+  `;
+}
+
+function checkDictationResult(id) {
+  const s = data.sentences.find(x => x.id === id);
+  const input = document.getElementById('dictInput').value.trim();
+  if (!input) { alert('请先输入你听到的内容'); return; }
+  const userWords = input.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/);
+  const ansWords = s.en.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/);
+  let correct = 0;
+  ansWords.forEach(w => {
+    if (userWords.some(uw => uw === w || uw.includes(w.substring(0, Math.min(3, w.length))))) correct++;
+  });
+  const score = Math.round(correct / ansWords.length * 100);
+  const area = document.getElementById('mainArea');
+  area.innerHTML = `
+    <div style="background:white;margin:15px;border-radius:12px;padding:20px;">
+      <p style="margin-bottom:10px;font-size:18px;">得分：<strong style="color:${score>=70?'#4caf50':'#f44336'};">${score}%</strong></p>
+      <p style="margin-bottom:8px;">你的输入：<br><span style="color:#666;">${input}</span></p>
+      <p style="margin-bottom:8px;">正确答案：<br><span style="color:#667eea;">${s.en}</span></p>
+      ${score >= 70 ? '<p style="color:#4caf50;font-weight:bold;">✅ 听写通过！已自动标记</p>' : '<p style="color:#f44336;">❌ 还需努力，建议再听一遍</p>'}
+      <button onclick="if(${score>=70}) { markKnown(${s.id}); } else { markForget(${s.id}); }" style="margin-top:15px;width:100%;padding:14px;background:${score>=70?'#4caf50':'#ff9800'};color:white;border:none;border-radius:8px;font-size:16px;font-weight:bold;">${score>=70?'✅ 标记为已掌握':'❌ 标记为未掌握'}</button>
+      <button onclick="renderCurrentTab()" style="margin-top:10px;width:100%;padding:12px;background:#eee;border:none;border-radius:8px;font-size:14px;">← 返回学习</button>
+    </div>
+  `;
+}
+
 // ============ 标签切换 ============
 let currentTab = 'study';
 let currentCat = '全部';
@@ -425,22 +485,14 @@ function renderStudy(area) {
       <button class="btn-know" onclick="markKnown(${s.id})">✅ 记住了</button>
       <button class="btn-forget" onclick="markForget(${s.id})">❌ 还没记住</button>
     </div>
-    <button onclick="speakText('${s.en.replace(/'/g,"\\'")}')" style="margin:10px 15px;padding:10px;background:#e3f2fd;border:none;border-radius:8px;width:calc(100% - 30px);">🔊 听发音</button>
+    <button onclick="speakText('${s.en.replace(/'/g,"\\'")}')" style="margin:10px 15px;padding:12px;background:#e3f2fd;border:none;border-radius:8px;width:calc(100% - 30px);font-size:15px;">🔊 听发音</button>
+    <button onclick="startDictation(${s.id})" style="margin:10px 15px;padding:12px;background:#fff3e0;border:none;border-radius:8px;width:calc(100% - 30px);font-size:15px;">✍️ 听写练习</button>
   `;
 }
 
 function flipCard() {
   const en = document.getElementById('enText');
   if (en) en.style.display = en.style.display === 'none' ? 'block' : 'none';
-}
-
-function speakText(text) {
-  if ('speechSynthesis' in window) {
-    speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.7; u.pitch = 1; u.volume = 1;
-    speechSynthesis.speak(u);
-  }
 }
 
 // ============ 复习 ============
@@ -458,7 +510,8 @@ function renderReview(area) {
       <button class="btn-know" onclick="markKnown(${s.id})">✅ 记住了</button>
       <button class="btn-forget" onclick="markForget(${s.id})">❌ 忘了</button>
     </div>
-    <button onclick="speakText('${s.en.replace(/'/g,"\\'")}')" style="margin:10px 15px;padding:10px;background:#e3f2fd;border:none;border-radius:8px;width:calc(100% - 30px);">🔊 听发音</button>
+    <button onclick="speakText('${s.en.replace(/'/g,"\\'")}')" style="margin:10px 15px;padding:12px;background:#e3f2fd;border:none;border-radius:8px;width:calc(100% - 30px);font-size:15px;">🔊 听发音</button>
+    <button onclick="startDictation(${s.id})" style="margin:10px 15px;padding:12px;background:#fff3e0;border:none;border-radius:8px;width:calc(100% - 30px);font-size:15px;">✍️ 听写练习</button>
   `;
 }
 
@@ -467,7 +520,7 @@ function flipCard2() {
   if (en) en.style.display = en.style.display === 'none' ? 'block' : 'none';
 }
 
-// ============ 默写 ============
+// ============ 默写（Tab页） ============
 function renderDictate(area) {
   const list = getFiltered().filter(s => !s.dictPass);
   if (list.length === 0) { area.innerHTML = '<div style="padding:40px;text-align:center;color:#999;">🎉 当前分类默写已全部过关！</div>'; return; }
@@ -501,7 +554,7 @@ function checkDict(answer, id) {
   const ansWords = answer.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/);
   let correct = 0;
   let result = '';
-  ansWords.forEach((w, i) => {
+  ansWords.forEach(w => {
     const isCorrect = userWords.some(uw => uw === w || uw.includes(w.substring(0, Math.min(3, w.length))));
     if (isCorrect) { correct++; result += `<span class="word-correct">${w}</span> `; }
     else result += `<span class="word-wrong">${w}</span> `;
@@ -513,7 +566,7 @@ function checkDict(answer, id) {
       <p style="margin-bottom:10px;">得分：<strong>${score}%</strong></p>
       <p>${result}</p>
       <p style="margin-top:10px;font-size:13px;color:#666;">正确答案：${answer}</p>
-      <button onclick="renderDictate(document.getElementById('mainArea'))" style="margin-top:15px;width:100%;padding:12px;background:#667eea;color:white;border:none;border-radius:8px;">下一句</button>
+      <button onclick="renderDictate(document.getElementById('mainArea'))" style="margin-top:15px;width:100%;padding:12px;background:#667eea;color:white;border:none;border-radius:8px;font-size:16px;">下一句</button>
     </div>
   `;
 }
