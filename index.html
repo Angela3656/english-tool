@@ -2,176 +2,110 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>英语口语记忆工具</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>外贸背句工具</title>
 <style>
-  body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; background: #f5f5f5; }
-  .card { background: white; padding: 20px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-  .cn { color: #666; margin-bottom: 8px; font-size: 16px; }
-  .en { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #333; }
-  button { padding: 10px 16px; border: none; border-radius: 8px; background: #667eea; color: white; cursor: pointer; margin-right: 8px; margin-bottom: 8px; font-size: 14px; }
-  button:hover { opacity: 0.9; }
-  .dictation-area { margin-top: 15px; padding-top: 15px; border-top: 1px dashed #eee; }
-  textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 10px; font-size: 16px; }
-  .word-correct { color: #28a745; font-weight: bold; }
-  .word-wrong { color: #dc3545; text-decoration: line-through; }
-  .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
-  .tab-btn { background: #ddd; color: #333; }
-  .tab-btn.active { background: #667eea; color: white; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f5; padding-bottom: 80px; }
+.header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px 15px 15px; text-align: center; }
+.header h1 { font-size: 20px; margin-bottom: 5px; }
+.header p { font-size: 13px; opacity: 0.85; }
+.stats-bar { display: flex; justify-content: space-around; background: white; padding: 12px 10px; border-bottom: 1px solid #eee; font-size: 12px; }
+.stats-bar div { text-align: center; }
+.stats-bar span { display: block; font-size: 18px; font-weight: bold; color: #667eea; }
+.tab-bar { display: flex; position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #ddd; z-index: 100; }
+.tab-bar button { flex: 1; padding: 12px 4px; border: none; background: none; font-size: 11px; color: #666; }
+.tab-bar button.active { color: #667eea; font-weight: bold; }
+.tab-bar button span { display: block; font-size: 18px; margin-bottom: 2px; }
+.cat-bar { display: flex; overflow-x: auto; padding: 10px; gap: 8px; background: white; border-bottom: 1px solid #eee; }
+.cat-bar button { white-space: nowrap; padding: 6px 14px; border: 1px solid #ddd; border-radius: 20px; background: white; font-size: 13px; }
+.cat-bar button.active { background: #667eea; color: white; border-color: #667eea; }
+.card { background: white; margin: 15px; border-radius: 12px; padding: 20px; min-height: 200px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.card .cn { font-size: 18px; color: #333; margin-bottom: 15px; }
+.card .en { font-size: 16px; color: #667eea; }
+.card .level { font-size: 12px; color: #999; margin-top: 10px; }
+.btn-row { display: flex; gap: 10px; padding: 0 15px; margin-top: 10px; }
+.btn-row button { flex: 1; padding: 12px; border: none; border-radius: 8px; font-size: 14px; font-weight: bold; }
+.btn-know { background: #4caf50; color: white; }
+.btn-forget { background: #ff9800; color: white; }
+.review-banner { background: #fff3e0; padding: 10px 15px; text-align: center; font-size: 14px; color: #e65100; }
+.list-item { background: white; margin: 8px 15px; padding: 12px; border-radius: 8px; font-size: 13px; }
+.list-item .cn { color: #333; }
+.list-item .en { color: #667eea; font-size: 12px; margin-top: 4px; }
+.list-item .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; margin-top: 5px; }
+.tag-due { background: #fff3e0; color: #e65100; }
+.tag-mastered { background: #e8f5e9; color: #2e7d32; }
+.add-form { padding: 15px; }
+.add-form input, .add-form textarea, .add-form select { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; }
+.add-form button { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; }
+.dictation-area { padding: 15px; }
+.dictation-area .cn-prompt { background: white; padding: 20px; border-radius: 12px; font-size: 18px; text-align: center; margin-bottom: 15px; }
+.dictation-result { padding: 15px; }
+.dictation-result .word-correct { color: #4caf50; }
+.dictation-result .word-wrong { color: #f44336; }
 </style>
 </head>
 <body>
 
-<h1>🎯 英语口语记忆工具</h1>
-<div class="tabs">
-  <button class="tab-btn active" onclick="switchTab('study')">学习</button>
-  <button class="tab-btn" onclick="switchTab('dictate')">听写</button>
-  <button class="tab-btn" onclick="switchTab('add')">添加</button>
+<div class="header">
+  <h1>📦 外贸背句工具</h1>
+  <p>手机壳采购 · 外贸跟单 · 商务英语 · 艾宾浩斯记忆</p>
 </div>
+
+<div class="stats-bar">
+  <div><span id="statTotal">0</span>总句数</div>
+  <div><span id="statDue">0</span>待复习</div>
+  <div><span id="statMastered">0</span>已固化</div>
+  <div><span id="statStreak">0</span>🔥连续</div>
+</div>
+
+<div class="review-banner" id="reviewBanner" style="display:none;" onclick="switchTab('review')">
+  🔥 你有 <span id="bannerCount">0</span> 句该复习了！点我进入
+</div>
+
+<div class="cat-bar" id="catBar"></div>
 
 <div id="mainArea"></div>
 
+<div class="tab-bar">
+  <button class="active" onclick="switchTab('study', this)"><span>📖</span>学新句</button>
+  <button onclick="switchTab('review', this)"><span>🔁</span>复习</button>
+  <button onclick="switchTab('dictate', this)"><span>✍️</span>听写</button>
+  <button onclick="switchTab('add', this)"><span>➕</span>添加</button>
+  <button onclick="switchTab('list', this)"><span>📋</span>列表</button>
+</div>
+
 <script>
-let data = { sentences: [], mode: 'study' };
-const categories = ['全部', '日常', '商务', '旅行'];
-
-// 初始化默认数据（防止缓存为空时页面空白）
-if (!data.sentences || data.sentences.length === 0) {
-  data.sentences = [
-    { id: 1, cn: '你好吗？', en: 'How are you doing?', cat: '日常', level: 0, nextReview: 0, mastered: false, dictPass: false },
-    { id: 2, cn: '我很高兴认识你。', en: 'Nice to meet you.', cat: '日常', level: 0, nextReview: 0, mastered: false, dictPass: false }
-  ];
-}
-
-// 语音朗读优化（正常语速）
-function speak(text) {
-  if (!window.speechSynthesis) {
-    alert('你的浏览器不支持语音朗读，请换用 Chrome 或 Edge 浏览器。');
-    return;
-  }
-  window.speechSynthesis.cancel();
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'en-US';
-  utterance.rate = 1.0; // 正常语速
-  utterance.pitch = 1.0;
-  utterance.volume = 1.0;
-  
-  const voices = window.speechSynthesis.getVoices();
-  const enVoice = voices.find(v => v.lang.includes('en-US') && v.name.includes('Google')) || voices.find(v => v.lang.includes('en-US'));
-  if (enVoice) utterance.voice = enVoice;
-  
-  window.speechSynthesis.speak(utterance);
-}
-
-function switchTab(tab) {
-  data.mode = tab;
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
-  renderCurrentTab();
-}
-
-function renderCurrentTab() {
-  const area = document.getElementById('mainArea');
-  if (data.mode === 'study') renderStudy(area);
-  else if (data.mode === 'dictate') renderDictate(area);
-  else if (data.mode === 'add') renderAdd(area);
-}
-
-function renderStudy(area) {
-  const list = data.sentences;
-  if (list.length === 0) { area.innerHTML = '<p>暂无句子，去添加吧！</p>'; return; }
-  
-  area.innerHTML = list.map(s => `
-    <div class="card">
-      <div class="cn">${s.cn}</div>
-      <div class="en">${s.en}</div>
-      <button onclick="speak('${s.en.replace(/'/g, "\\'")}')">🔊 朗读</button>
-      <button onclick="alert('已标记为掌握！')">✅ 标记掌握</button>
-      <div class="dictation-area">
-        <button onclick="showDictInput(${s.id})">✍️ 听写这句</button>
-      </div>
-      <div id="dict-container-${s.id}"></div>
-    </div>
-  `).join('');
-}
-
-function showDictInput(id) {
-  const container = document.getElementById(`dict-container-${id}`);
-  const s = data.sentences.find(x => x.id === id);
-  speak(s.en);
-  container.innerHTML = `
-    <textarea id="dictInput" rows="2" placeholder="请听写英文..."></textarea>
-    <div id="dictHint" style="font-size:12px;color:#888;margin-bottom:8px;"></div>
-    <button onclick="checkDict('${s.en.replace(/'/g, "\\'")}', ${id})">批改</button>
-  `;
-  document.getElementById('dictInput').addEventListener('input', () => checkDictRealTime(s.en));
-}
-
-function checkDictRealTime(answer) {
-  const input = document.getElementById('dictInput').value.toLowerCase().trim();
-  const hint = document.getElementById('dictHint');
-  if (!input) { hint.textContent = ''; return; }
-  const words = answer.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/);
-  const inputWords = input.replace(/[^\w\s]/g,'').split(/\s+/);
-  let matched = 0;
-  words.forEach(w => { if (inputWords.some(iw => iw.includes(w.substring(0,3)))) matched++; });
-  hint.textContent = `已匹配 ${matched}/${words.length} 个词块`;
-}
-
-function checkDict(answer, id) {
-  const input = document.getElementById('dictInput').value;
-  const area = document.getElementById('mainArea');
-  const s = data.sentences.find(x => x.id === id);
-  const userWords = input.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/);
-  const ansWords = answer.toLowerCase().replace(/[^\w\s]/g,'').split(/\s+/);
-  let correct = 0;
-  let result = '';
-  ansWords.forEach(w => {
-    const isCorrect = userWords.some(uw => uw === w || uw.includes(w.substring(0, Math.min(3, w.length))));
-    if (isCorrect) { correct++; result += `<span class="word-correct">${w}</span> `; }
-    else result += `<span class="word-wrong">${w}</span> `;
-  });
-  const score = Math.round(correct / ansWords.length * 100);
-  if (score >= 70 && s) { s.dictPass = true; saveData(); }
-  area.innerHTML = `
-    <div class="dictation-result">
-      <p style="margin-bottom:10px;">得分：<strong>${score}%</strong></p>
-      <p>${result}</p>
-      <p style="margin-top:10px;font-size:13px;color:#666;">正确答案：${answer}</p>
-      <button onclick="renderStudy(document.getElementById('mainArea'))" style="margin-top:15px;width:100%;padding:12px;background:#667eea;color:white;border:none;border-radius:8px;font-size:16px;">返回</button>
-    </div>
-  `;
-}
-
-function renderAdd(area) {
-  let opts = '';
-  for (let i = 0; i < categories.length; i++) {
-    if (categories[i] !== '全部') opts += `<option>${categories[i]}</option>`;
-  }
-  area.innerHTML = `<div class="card"><select id="addCat">${opts}</select><textarea id="addCn" placeholder="中文句子" style="width:100%;margin-top:10px;"></textarea><input id="addEn" placeholder="英文句子" style="width:100%;margin-top:10px;padding:10px;"><button onclick="doAdd()" style="margin-top:10px;">添加句子</button></div>`;
-}
-
-function doAdd() {
-  const cn = document.getElementById('addCn').value.trim();
-  const en = document.getElementById('addEn').value.trim();
-  const cat = document.getElementById('addCat').value;
-  if (!cn || !en) { alert('请填写中英文'); return; }
-  data.sentences.push({ id: Date.now(), cn: cn, en: en, cat: cat, level: 0, nextReview: 0, mastered: false, dictPass: false });
-  saveData();
-  document.getElementById('addCn').value = ''; document.getElementById('addEn').value = '';
-  alert('添加成功！');
-}
-
-function saveData() {
-  localStorage.setItem('englishToolData', JSON.stringify(data));
-}
-
-function loadData() {
-  const saved = localStorage.getItem('englishToolData');
-  if (saved) data = JSON.parse(saved);
-}
-
-loadData();
-renderCurrentTab();
-</script>
-</body>
-</html>
+// ============ 内置210句外贸商务词库 ============
+const builtinSentences = [
+  {cn:"我们专业做手机壳，有7年经验",en:"We specialize in mobile phone cases with 7 years experience.",cat:"开发信"},
+  {cn:"每款最小起订量500个，可以混色",en:"MOQ is 500pcs per design. Mixed colors are accepted.",cat:"开发信"},
+  {cn:"付款确认后交期15-20天",en:"Lead time is 15-20 days after payment confirmed.",cat:"开发信"},
+  {cn:"附件是我们的目录供您参考",en:"Attached is our catalog for your reference.",cat:"开发信"},
+  {cn:"请问您主要做什么机型",en:"May I know what phone models you mainly focus on?",cat:"开发信"},
+  {cn:"我们可以提供定制设计服务",en:"We offer custom design service for your brand.",cat:"开发信"},
+  {cn:"工厂有BSCI和ISO9001认证",en:"Our factory is certified with BSCI and ISO9001.",cat:"开发信"},
+  {cn:"请提供您的详细收货地址",en:"Please provide your detailed shipping address.",cat:"开发信"},
+  {cn:"我们每周上新20款",en:"We launch 20 new designs every week.",cat:"开发信"},
+  {cn:"这款是热卖款，月销5万件",en:"This is a bestseller with 50,000 units sold per month.",cat:"开发信"},
+  {cn:"您需要多少样品？我们免费提供",en:"How many samples do you need? We provide them for free.",cat:"开发信"},
+  {cn:"请提供您的公司名称和税号",en:"Please provide your company name and tax ID.",cat:"开发信"},
+  {cn:"报价有效期为7天",en:"The quotation is valid for 7 days.",cat:"开发信"},
+  {cn:"我们可以安排视频验厂",en:"We can arrange a video factory tour for you.",cat:"开发信"},
+  {cn:"请问您是需要现货还是定制",en:"Do you need ready stock or custom production?",cat:"开发信"},
+  {cn:"我们支持一件代发",en:"We support dropshipping service.",cat:"开发信"},
+  {cn:"请提供您的WhatsApp号码",en:"Please share your WhatsApp number for faster communication.",cat:"开发信"},
+  {cn:"打样费在后续大货订单中退还",en:"The sample fee will be refunded in your future bulk order.",cat:"开发信"},
+  {cn:"我们接受OEM和ODM订单",en:"We accept both OEM and ODM orders.",cat:"开发信"},
+  {cn:"请确认收到PI并安排定金",en:"Please confirm receipt of PI and arrange the deposit.",cat:"开发信"},
+  {cn:"这款有现货，3天内可发货",en:"This item is in stock and can be shipped within 3 days.",cat:"开发信"},
+  {cn:"我们可以提供高清产品图片",en:"We can provide high resolution product photos.",cat:"开发信"},
+  {cn:"请问您的目标市场是哪里",en:"May I know your target market?",cat:"开发信"},
+  {cn:"我们有自己的模具车间",en:"We have our own mold workshop.",cat:"开发信"},
+  {cn:"包装可以定制您的logo",en:"Packaging can be customized with your logo.",cat:"开发信"},
+  {cn:"欢迎参观我们的工厂",en:"You are welcome to visit our factory.",cat:"开发信"},
+  {cn:"能更新一下生产进度吗",en:"Could you please update the production status?",cat:"催货交期"},
+  {cn:"因材料短缺，出货推迟5天",en:"The shipment date is delayed by 5 days due to material shortage.",cat:"催货交期"},
+  {cn:"我们需要在10月25日前收到货，否则赶不上船",en:"We need the goods by Oct 25th, otherwise we'll miss the vessel.",cat:"催货交期"},
+  {cn:"请今天确认出货安排",en:"Please confirm the shipment arrangement today.",cat:"催货交期"},
+  {cn:"工厂现在产能排满了，最早下周三",en:"The factory is at full capacity now, earliest next Wednesday.",cat:"
